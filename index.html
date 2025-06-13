@@ -3,7 +3,7 @@
 
     <head>
         <meta charset="UTF-8">
-        <title>SolarRepair Financial Dashboard</title>
+        <title>Financial KPI Dashboard (Simple)</title>
         <!-- explicit Plotly.js v3.0.1 -->
         <script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
         <style>
@@ -168,26 +168,27 @@
                 }
             }
         </style>
+        <script src="https://cdn.usefathom.com/script.js" data-site="VYPMYPEP" defer></script>
     </head>
 
     <body>
 
-        <h1>☀️ SolarRepair Dashboard</h1>
-        <button id="updateDataBtn">🔄 Load / Update Reports</button>
+        <h1>Financial KPI Dashboard (Simple)</h1>
+        <button id="updateDataBtn" aria-label="Load or Update Financial Reports">🔄 Load / Update Reports</button>
 
-        <nav class="navbar">
-            <a href="#charts">Go to Charts</a>
-            <a href="#summary">Go to Summary</a>
+        <nav class="navbar" role="navigation" aria-label="Main Navigation">
+            <a href="#charts" aria-label="Go to Charts section">Go to Charts</a>
+            <a href="#summary" aria-label="Go to Summary section">Go to Summary</a>
         </nav>
 
         <div class="upload">
             <label>
-                P&L JSON:
-                <input id="filePL" type="file" accept=".json">
+                P&amp;L JSON:
+                <input id="filePL" type="file" accept=".json" aria-label="Upload Profit and Loss JSON file">
             </label>
             <label>
                 Balance Sheet JSON:
-                <input id="fileBS" type="file" accept=".json">
+                <input id="fileBS" type="file" accept=".json" aria-label="Upload Balance Sheet JSON file">
             </label>
         </div>
 
@@ -196,45 +197,45 @@
         </section>
 
         <div id="charts">
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Revenue & Profit Trend">
                 <h2>Revenue & Profit Trend</h2>
-                <div id="revenueTrend" class="chart"></div>
+                <div id="revenueTrend" class="chart" role="img" aria-label="Line chart showing revenue and profit trend"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Profit Margins (%)">
                 <h2>Profit Margins (%)</h2>
-                <div id="marginChart" class="chart"></div>
+                <div id="marginChart" class="chart" role="img" aria-label="Bar chart showing gross and net profit margins"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Liquidity & Working Capital">
                 <h2>Liquidity & Working Capital</h2>
-                <div id="liquidityChart" class="chart"></div>
+                <div id="liquidityChart" class="chart" role="img" aria-label="Bar and line chart showing current ratio, quick ratio, and working capital"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Debt Service Coverage Ratio (DSCR)">
                 <h2>Debt Service Coverage Ratio (DSCR)</h2>
-                <div id="dscrChart" class="chart"></div>
+                <div id="dscrChart" class="chart" role="img" aria-label="Bar chart showing debt service coverage ratio"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Debt-to-Equity Ratio">
                 <h2>Debt-to-Equity Ratio</h2>
-                <div id="debtEqChart" class="chart"></div>
+                <div id="debtEqChart" class="chart" role="img" aria-label="Bar chart showing debt-to-equity ratio"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="A/R Turnover">
                 <h2>A/R Turnover</h2>
-                <div id="arTurnoverChart" class="chart"></div>
+                <div id="arTurnoverChart" class="chart" role="img" aria-label="Bar chart showing accounts receivable turnover"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Inventory Turnover">
                 <h2>Inventory Turnover</h2>
-                <div id="invTurnoverChart" class="chart"></div>
+                <div id="invTurnoverChart" class="chart" role="img" aria-label="Bar chart showing inventory turnover"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Expense Breakdown (Current Period)">
                 <h2>Expense Breakdown (Current Period)</h2>
-                <div id="expenseBreakdownChart" class="chart"></div>
+                <div id="expenseBreakdownChart" class="chart" role="img" aria-label="Pie chart showing expense breakdown for the current period"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Balance Sheet Composition">
                 <h2>Balance Sheet Composition</h2>
-                <div id="bsCompositionChart" class="chart"></div>
+                <div id="bsCompositionChart" class="chart" role="img" aria-label="Treemap chart showing balance sheet composition"></div>
             </div>
-            <div class="chart-container">
+            <div class="chart-container" role="region" aria-label="Year-over-Year Growth Rates (%)">
                 <h2>Year-over-Year Growth Rates (%)</h2>
-                <div id="growthRatesChart" class="chart"></div>
+                <div id="growthRatesChart" class="chart" role="img" aria-label="Bar chart showing year-over-year growth rates"></div>
             </div>
         </div>
 
