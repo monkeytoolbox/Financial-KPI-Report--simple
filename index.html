@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>SolarRepair Financial Dashboard</title>
+        <!-- explicit Plotly.js v3.0.1 -->
+        <script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+            body {
+                margin: 0;
+                font-family: 'Roboto', sans-serif;
+                background: #FFFFFF;
+                color: #0A1F44;
+            }
+
+            h1 {
+                text-align: center;
+                padding: 20px 0;
+                margin: 0;
+                font-weight: 700;
+                font-size: 2em;
+            }
+
+            /* New “update data” button */
+            #updateDataBtn {
+                display: block;
+                margin: 10px auto;
+                padding: 8px 16px;
+                font-size: 1em;
+                border: none;
+                border-radius: 4px;
+                background: #0A1F44;
+                color: #FFEC8B;
+                cursor: pointer;
+            }
+
+            .upload {
+                text-align: center;
+                margin-bottom: 30px;
+                display: none;
+                /* hidden until “Load/Update Reports” clicked */
+            }
+
+            .upload input {
+                margin: 0 10px;
+                padding: 6px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+
+            /* charts wrapper hidden until data loads */
+            #charts {
+                display: none;
+                /* push charts down so they don’t overlap navbar */
+                margin-top: 20px;
+                flex-wrap: wrap;
+                justify-content: space-around;
+                gap: 30px;
+                padding: 0 5%;
+                display: flex;
+            }
+
+            .chart-container {
+                width: 40%;
+                background: #FFFFFFDD;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                padding: 4px;
+                display: none;
+                /* hidden until data loads */
+            }
+
+            /* style for summary container */
+            #summary {
+                background: #FFFFFFDD;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                margin: 30px 5%;
+                padding: 10px;
+            }
+
+            /* instructions container */
+            #instructions {
+                background: #FFFFFFDD;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                margin: 30px 5%;
+                padding: 10px;
+            }
+
+            #instructions h2 {
+                margin-top: 0;
+                text-align: center;
+            }
+
+            #instructions h3 {
+                margin-bottom: 8px;
+            }
+
+            #instructions p,
+            #instructions ul {
+                margin: 8px 0;
+                line-height: 1.5;
+            }
+
+            /* spacing and tip formatting in instructions */
+            #instructions ul li {
+                margin-bottom: 12px;
+            }
+
+            #instructions ul li em {
+                margin-top: 4px;
+                color: #0A1F44;
+            }
+
+            #summary h2 {
+                margin-top: 0;
+                text-align: center;
+            }
+
+            #summary table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            #summary th,
+            #summary td {
+                padding: 6px 8px;
+                border-bottom: 1px solid #ccc;
+            }
+
+            #summary th {
+                text-align: left;
+                font-weight: 700;
+            }
+
+            .navbar {
+                position: sticky;
+                top: 0;
+                background-color: rgba(255, 255, 255, 0.9);
+                padding: 10px;
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+            }
+
+            .navbar a {
+                color: #0A1F44;
+                text-decoration: none;
+                font-weight: 700;
+            }
+
+            .chart-container h2 {
+                text-align: center;
+                margin: 0 0 8px;
+                font-size: 1.1em;
+            }
+
+            .chart-container .chart {
+                width: 100%;
+                height: 360px;
+            }
+
+            @media (max-width: 900px) {
+                .chart-container {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <h1>☀️ SolarRepair Dashboard</h1>
+        <button id="updateDataBtn">🔄 Load / Update Reports</button>
+
+        <nav class="navbar">
+            <a href="#charts">Go to Charts</a>
+            <a href="#summary">Go to Summary</a>
+        </nav>
+
+        <div class="upload">
+            <label>
+                P&L JSON:
+                <input id="filePL" type="file" accept=".json">
+            </label>
+            <label>
+                Balance Sheet JSON:
+                <input id="fileBS" type="file" accept=".json">
+            </label>
+        </div>
+
+        <section id="summary">
+            <!-- summary table is injected here -->
+        </section>
+
+        <div id="charts">
+            <div class="chart-container">
+                <h2>Revenue & Profit Trend</h2>
+                <div id="revenueTrend" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Profit Margins (%)</h2>
+                <div id="marginChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Liquidity & Working Capital</h2>
+                <div id="liquidityChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Debt Service Coverage Ratio (DSCR)</h2>
+                <div id="dscrChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Debt-to-Equity Ratio</h2>
+                <div id="debtEqChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>A/R Turnover</h2>
+                <div id="arTurnoverChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Inventory Turnover</h2>
+                <div id="invTurnoverChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Expense Breakdown (Current Period)</h2>
+                <div id="expenseBreakdownChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Balance Sheet Composition</h2>
+                <div id="bsCompositionChart" class="chart"></div>
+            </div>
+            <div class="chart-container">
+                <h2>Year-over-Year Growth Rates (%)</h2>
+                <div id="growthRatesChart" class="chart"></div>
+            </div>
+        </div>
+
+        <section id="instructions">
+            <h2>Instructions</h2>
+            <h3>Get Started</h3>
+            <p>To get started, click “🔄 Load / Update Reports” and upload your P&amp;L and Balance Sheet JSON files. You can convert CSV files to JSON via <a href="https://csvjson.com/csv2json" target="_blank">csvjson.com/csv2json</a>.</p>
+            <h3>Interpreting Key Metrics</h3>
+            <ul>
+                <li>
+                    <p><strong>Inventory Turnover</strong>: Shows how many times inventory is sold and replaced in a period. A <em>higher</em> number indicates efficient inventory management, while a <em>lower</em> number suggests overstocking or slow-moving goods.</p>
+                    <p><em>Tip:</em> To improve, consider reducing order quantities, running promotions on aging stock, or tightening purchasing forecasts.</p>
+                </li>
+                <li>
+                    <p><strong>Current & Quick Ratios</strong>: Measure liquidity. Ratios <em>above</em> 1.2 typically signal healthy cash flow; ratios <em>below</em> 1 may indicate difficulty covering short-term obligations.</p>
+                    <p><em>Tip:</em> Improve liquidity by accelerating receivables, delaying payables, or managing inventory levels.</p>
+                </li>
+                <li>
+                    <p><strong>Debt Service Coverage Ratio (DSCR)</strong>: Indicates ability to cover debt payments. A ratio <em>below</em> 1.25 can alarm lenders.</p>
+                    <p><em>Tip:</em> Increase through boosting net operating income or refinancing to lower interest costs.</p>
+                </li>
+                <li>
+                    <p><strong>A/R Turnover</strong>: Reflects how quickly you collect receivables. A <em>higher</em> turnover means faster collections; a <em>lower</em> rate may signal lenient credit terms.</p>
+                    <p><em>Tip:</em> Tighten payment terms, offer early-payment discounts, or follow up on overdue invoices.</p>
+                </li>
+                <li>
+                    <p><strong>Revenue</strong>: Total top‑line income for the period.</p>
+                    <p><em>Tip:</em> If revenue is underperforming, focus on sales promotions, expanding services, or reevaluating pricing.</p>
+                </li>
+                <li>
+                    <p><strong>Gross Profit</strong>: Revenue minus cost of goods sold. Shows core production/service margin.</p>
+                    <p><em>Tip:</em> To improve, negotiate better supplier costs or optimize service delivery efficiency.</p>
+                </li>
+                <li>
+                    <p><strong>Net Income</strong>: Gross profit minus operating expenses. Your bottom‑line profitability.</p>
+                    <p><em>Tip:</em> Reduce overhead, streamline operations, or increase high‑margin services to boost net income.</p>
+                </li>
+                <li>
+                    <p><strong>Working Capital</strong>: Current assets minus current liabilities. Indicates short‑term financial health.</p>
+                    <p><em>Tip:</em> Improve by managing payables, speeding up receivables, or optimizing inventory levels.</p>
+                </li>
+                <li>
+                    <p><strong>Debt-to-Equity Ratio</strong>: Total liabilities divided by equity. Measures leverage.</p>
+                    <p><em>Tip:</em> If too high, consider paying down debt or raising equity to rebalance the ratio.</p>
+                </li>
+            </ul>
+        </section>
+
+        <script>
+            let plData = null, bsData = null
+
+            // On load, restore from localStorage if available
+            window.addEventListener('DOMContentLoaded', () => {
+                const plJson = localStorage.getItem('plData')
+                const bsJson = localStorage.getItem('bsData')
+                if (plJson && bsJson) {
+                    try {
+                        plData = JSON.parse(plJson)
+                        bsData = JSON.parse(bsJson)
+                        generateDashboard()
+                    } catch { }
+                }
+            })
+
+            // file inputs only shown when update button clicked
+            document.getElementById('updateDataBtn').addEventListener('click', () => {
+                // clear existing data
+                plData = null
+                bsData = null
+                localStorage.removeItem('plData')
+                localStorage.removeItem('bsData')
+                document.querySelector('.upload').style.display = 'block'
+                document.getElementById('charts').style.display = 'none'
+                document.querySelectorAll('.chart-container').forEach(c => c.style.display = 'none')
+            })
+
+            document.getElementById('filePL').addEventListener('change', handleFile('PL'))
+            document.getElementById('fileBS').addEventListener('change', handleFile('BS'))
+
+            function handleFile(type) {
+                return evt => {
+                    const file = evt.target.files[0]
+                    if (!file) return
+                    const reader = new FileReader()
+                    reader.onload = e => {
+                        try {
+                            if (type === 'PL') plData = JSON.parse(e.target.result)
+                            else bsData = JSON.parse(e.target.result)
+                            // save to localStorage so data persists across refresh
+                            if (type === 'PL' && plData) localStorage.setItem('plData', JSON.stringify(plData))
+                            if (type === 'BS' && bsData) localStorage.setItem('bsData', JSON.stringify(bsData))
+                            if (plData && bsData) generateDashboard()
+                        } catch (err) {
+                            alert(`Error parsing ${type} JSON: ${err}`)
+                        }
+                    }
+                    reader.readAsText(file)
+                }
+            }
+
+            function parseNum(val) {
+                if (typeof val === 'number') return val
+                return parseFloat((val || '').replace(/[$,]/g, '')) || 0
+            }
+
+            function generateDashboard() {
+                plotRevenueTrend(plData)
+                plotProfitMargins(plData)
+                plotLiquidityChart(bsData)
+                plotDSCRChart(plData)
+                plotDebtEquityChart(bsData)
+                plotARTurnoverChart(plData, bsData)
+                plotInventoryTurnoverChart(plData, bsData)
+                plotExpenseBreakdownChart(plData)
+                plotBSCompositionChart(bsData)
+                plotGrowthRatesChart(plData, bsData);
+                // build and inject summary table
+                (function () {
+                    const hdr = plData.find(r => r['__2'] === '$ Change (PY)')
+                    const priorLabel = hdr['__1'], currLabel = hdr['']
+                    // helper to get PL values
+                    const getPL = key => {
+                        const row = plData.find(r => r['Profit and Loss Comparison'] === key)
+                        return { prior: parseNum(row['__1']), curr: parseNum(row['']) }
+                    }
+                    // helper to get BS values
+                    const getBS = key => {
+                        const row = bsData.find(r => r['Balance Sheet Comparison'] === key)
+                        return { prior: parseNum(row['__1']), curr: parseNum(row['']) }
+                    }
+                    // Definitions map
+                    const definitions = {
+                        'Revenue': 'Total Income (P&L Total for Income)',
+                        'Gross Profit': 'Revenue minus Cost of Goods Sold',
+                        'Net Income': 'Gross Profit minus Expenses',
+                        'Current Ratio': 'Current Assets ÷ Current Liabilities',
+                        'Quick Ratio': '(Current Assets – Inventory) ÷ Current Liabilities',
+                        'Working Capital': 'Current Assets – Current Liabilities',
+                        'DSCR': 'Net Operating Income ÷ Interest Paid',
+                        'Debt-to-Equity': 'Total Liabilities ÷ Total Equity',
+                        'A/R Turnover': 'Sales ÷ Accounts Receivable',
+                        'Inventory Turnover': 'COGS ÷ Inventory Asset'
+                    }
+                    // Inventory values for quick ratio and inventory turnover
+                    const invRows = bsData.filter(r => /Inventory/.test(r['Balance Sheet Comparison']))
+                    const invPrior = invRows.reduce((s, r) => s + parseNum(r['__1']), 0)
+                    const invCurr = invRows.reduce((s, r) => s + parseNum(r['']), 0)
+                    const cogsRow = plData.find(r => r['Profit and Loss Comparison'] === 'Total for Cost of Goods Sold')
+                    const metrics = [
+                        {
+                            name: 'Revenue',
+                            ...getPL('Total for Income'),
+                            calcPriorStr: `${getPL('Total for Income').prior.toLocaleString()}`,
+                            calcCurrStr: `${getPL('Total for Income').curr.toLocaleString()}`
+                        },
+                        {
+                            name: 'Gross Profit',
+                            ...getPL('Gross Profit'),
+                            calcPriorStr: `${getPL('Gross Profit').prior.toLocaleString()}`,
+                            calcCurrStr: `${getPL('Gross Profit').curr.toLocaleString()}`
+                        },
+                        {
+                            name: 'Net Income',
+                            ...getPL('Net Income'),
+                            calcPriorStr: `${getPL('Net Income').prior.toLocaleString()}`,
+                            calcCurrStr: `${getPL('Net Income').curr.toLocaleString()}`
+                        },
+                        {
+                            name: 'Current Ratio',
+                            prior: getBS('Total for Current Assets').prior / getBS('Total for Current Liabilities').prior,
+                            curr: getBS('Total for Current Assets').curr / getBS('Total for Current Liabilities').curr,
+                            calcPriorStr: `${getBS('Total for Current Assets').prior.toLocaleString()} / ${getBS('Total for Current Liabilities').prior.toLocaleString()}`,
+                            calcCurrStr: `${getBS('Total for Current Assets').curr.toLocaleString()} / ${getBS('Total for Current Liabilities').curr.toLocaleString()}`
+                        },
+                        {
+                            name: 'Quick Ratio',
+                            prior: (getBS('Total for Current Assets').prior - invPrior) / getBS('Total for Current Liabilities').prior,
+                            curr: (getBS('Total for Current Assets').curr - invCurr) / getBS('Total for Current Liabilities').curr,
+                            calcPriorStr: `(${getBS('Total for Current Assets').prior.toLocaleString()} - ${invPrior.toLocaleString()}) / ${getBS('Total for Current Liabilities').prior.toLocaleString()}`,
+                            calcCurrStr: `(${getBS('Total for Current Assets').curr.toLocaleString()} - ${invCurr.toLocaleString()}) / ${getBS('Total for Current Liabilities').curr.toLocaleString()}`
+                        },
+                        {
+                            name: 'Working Capital',
+                            prior: getBS('Total for Current Assets').prior - getBS('Total for Current Liabilities').prior,
+                            curr: getBS('Total for Current Assets').curr - getBS('Total for Current Liabilities').curr,
+                            calcPriorStr: `${getBS('Total for Current Assets').prior.toLocaleString()} - ${getBS('Total for Current Liabilities').prior.toLocaleString()}`,
+                            calcCurrStr: `${getBS('Total for Current Assets').curr.toLocaleString()} - ${getBS('Total for Current Liabilities').curr.toLocaleString()}`
+                        },
+                        {
+                            name: 'DSCR',
+                            prior: getPL('Net Operating Income').prior / getPL('Interest Paid').prior,
+                            curr: getPL('Net Operating Income').curr / getPL('Interest Paid').curr,
+                            calcPriorStr: `${getPL('Net Operating Income').prior.toLocaleString()} / ${getPL('Interest Paid').prior.toLocaleString()}`,
+                            calcCurrStr: `${getPL('Net Operating Income').curr.toLocaleString()} / ${getPL('Interest Paid').curr.toLocaleString()}`
+                        },
+                        {
+                            name: 'Debt-to-Equity',
+                            prior: getBS('Total for Liabilities').prior / getBS('Total for Equity').prior,
+                            curr: getBS('Total for Liabilities').curr / getBS('Total for Equity').curr,
+                            calcPriorStr: `${getBS('Total for Liabilities').prior.toLocaleString()} / ${getBS('Total for Equity').prior.toLocaleString()}`,
+                            calcCurrStr: `${getBS('Total for Liabilities').curr.toLocaleString()} / ${getBS('Total for Equity').curr.toLocaleString()}`
+                        },
+                        {
+                            name: 'A/R Turnover',
+                            prior: getPL('Total for Income').prior / getBS('Accounts Receivable (A/R)').prior,
+                            curr: getPL('Total for Income').curr / getBS('Accounts Receivable (A/R)').curr,
+                            calcPriorStr: `${getPL('Total for Income').prior.toLocaleString()} / ${getBS('Accounts Receivable (A/R)').prior.toLocaleString()}`,
+                            calcCurrStr: `${getPL('Total for Income').curr.toLocaleString()} / ${getBS('Accounts Receivable (A/R)').curr.toLocaleString()}`
+                        },
+                        (() => {
+                            // inventory turnover
+                            return {
+                                name: 'Inventory Turnover',
+                                prior: parseNum(cogsRow['__1']) / invPrior,
+                                curr: parseNum(cogsRow['']) / invCurr,
+                                calcPriorStr: `${parseNum(cogsRow['__1']).toLocaleString()} / ${invPrior.toLocaleString()}`,
+                                calcCurrStr: `${parseNum(cogsRow['']).toLocaleString()} / ${invCurr.toLocaleString()}`
+                            }
+                        })()
+                    ]
+                    let html = '<h2>Summary</h2><table style="width:100%;border-collapse:collapse;">'
+                    html += `<thead><tr><th style="text-align:left;border-bottom:1px solid #ccc;">Metric</th>
+                             <th style="border-bottom:1px solid #ccc;">${priorLabel}</th>
+                             <th style="border-bottom:1px solid #ccc;">${currLabel}</th>
+                             <th style="border-bottom:1px solid #ccc;">Change (%)</th></tr></thead><tbody>`
+                    metrics.forEach(m => {
+                        const change = m.prior ? ((m.curr - m.prior) / Math.abs(m.prior) * 100) : NaN
+                        html += `<tr>
+                            <td style="padding:4px 8px;">
+                              ${m.name}<br>
+                              <small style="color:#666;">${definitions[m.name]}</small>
+                            </td>
+                            <td style="padding:4px 8px;">
+                              ${m.prior.toLocaleString(undefined, { maximumFractionDigits: 2 })}<br>
+                              <small style="color:#666;">${m.calcPriorStr}</small>
+                            </td>
+                            <td style="padding:4px 8px;">
+                              ${m.curr.toLocaleString(undefined, { maximumFractionDigits: 2 })}<br>
+                              <small style="color:#666;">${m.calcCurrStr}</small>
+                            </td>
+                            <td style="padding:4px 8px;">${isNaN(change) ? '–' : change.toFixed(2) + '%'}</td>
+                        </tr>`
+                    })
+                    html += '</tbody></table>'
+                    document.getElementById('summary').innerHTML = html
+                })()
+                // now show results and hide uploader
+                document.querySelector('.upload').style.display = 'none'
+                document.getElementById('charts').style.display = 'flex'
+                document.querySelectorAll('.chart-container').forEach(c => c.style.display = 'block')
+            }
+
+
+            function plotRevenueTrend(data) {
+                const hdr = data.find(r => r['__2'] === '$ Change (PY)')
+                const periodPrior = hdr['__1'], periodCurr = hdr['']
+                const periods = [periodPrior, periodCurr]
+                const byLabel = label => data.find(r => r['Profit and Loss Comparison'] === label)
+                const revRow = byLabel('Total for Income')
+                const grossRow = byLabel('Gross Profit')
+                const netRow = byLabel('Net Income')
+                const yRev = [parseNum(revRow['__1']), parseNum(revRow[''])]
+                const yGross = [parseNum(grossRow['__1']), parseNum(grossRow[''])]
+                const yNet = [parseNum(netRow['__1']), parseNum(netRow[''])]
+
+                Plotly.newPlot('revenueTrend', [
+                    { x: periods, y: yRev, name: 'Revenue', type: 'scatter', mode: 'lines+markers' },
+                    { x: periods, y: yGross, name: 'Gross Profit', type: 'scatter', mode: 'lines+markers' },
+                    { x: periods, y: yNet, name: 'Net Income', type: 'scatter', mode: 'lines+markers' }
+                ], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Revenue & Profit Trend'
+                }, { responsive: true })
+            }
+
+            function plotProfitMargins(data) {
+                const hdr = data.find(r => r['__2'] === '$ Change (PY)')
+                const periodPrior = hdr['__1'], periodCurr = hdr['']
+                const periods = [periodPrior, periodCurr]
+                const byLabel = label => data.find(r => r['Profit and Loss Comparison'] === label)
+                const rev = byLabel('Total for Income')
+                const gross = byLabel('Gross Profit')
+                const net = byLabel('Net Income')
+                const revVals = [parseNum(rev['__1']), parseNum(rev[''])]
+                const grossPct = [parseNum(gross['__1']) / revVals[0] * 100, parseNum(gross['']) / revVals[1] * 100]
+                const netPct = [parseNum(net['__1']) / revVals[0] * 100, parseNum(net['']) / revVals[1] * 100]
+
+                Plotly.newPlot('marginChart', [
+                    { x: periods, y: grossPct, name: 'Gross Margin %', type: 'bar' },
+                    { x: periods, y: netPct, name: 'Net Margin %', type: 'bar' }
+                ], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Profit Margins (%)',
+                    barmode: 'group',
+                    yaxis: { ticksuffix: '%' }
+                }, { responsive: true })
+            }
+
+            function plotLiquidityChart(data) {
+                const hdr = data.find(r => r['__2'] === '$ Change (PY)')
+                const periodPrior = hdr['__1'], periodCurr = hdr['']
+                const periods = [periodPrior, periodCurr]
+                const getRow = label => data.find(r => r['Balance Sheet Comparison'] === label)
+                const currAssets = getRow('Total for Current Assets')
+                const currLiab = getRow('Total for Current Liabilities')
+                const invRows = data.filter(r => /Inventory/.test(r['Balance Sheet Comparison']))
+                const invPrior = invRows.reduce((sum, r) => sum + parseNum(r['__1']), 0)
+                const invCurr = invRows.reduce((sum, r) => sum + parseNum(r['']), 0)
+                const caPrior = parseNum(currAssets['__1']), caCurr = parseNum(currAssets[''])
+                const clPrior = parseNum(currLiab['__1']), clCurr = parseNum(currLiab[''])
+                const currentRatio = [caPrior / clPrior, caCurr / clCurr]
+                const quickRatio = [(caPrior - invPrior) / clPrior, (caCurr - invCurr) / clCurr]
+                const workingCap = [caPrior - clPrior, caCurr - clCurr]
+
+                Plotly.newPlot('liquidityChart', [
+                    { x: periods, y: currentRatio, name: 'Current Ratio', type: 'bar' },
+                    { x: periods, y: quickRatio, name: 'Quick Ratio', type: 'bar' },
+                    { x: periods, y: workingCap, name: 'Working Cap', type: 'scatter', mode: 'lines+markers', yaxis: 'y2' }
+                ], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Liquidity & Working Capital',
+                    barmode: 'group',
+                    yaxis2: {
+                        overlaying: 'y',
+                        side: 'right',
+                        title: 'Working Cap ($)',
+                        tickformat: '$,~s'
+                    }
+                }, { responsive: true })
+            }
+
+            function plotDSCRChart(data) {
+                const hdr = data.find(r => r['__2'] === '$ Change (PY)')
+                const periodPrior = hdr['__1'], periodCurr = hdr['']
+                const periods = [periodPrior, periodCurr]
+                const byLabel = label => data.find(r => r['Profit and Loss Comparison'] === label)
+                const noiRow = byLabel('Net Operating Income')
+                const intRow = byLabel('Interest Paid')
+                const noiPrior = parseNum(noiRow['__1']), noiCurr = parseNum(noiRow[''])
+                const intPrior = parseNum(intRow['__1']), intCurr = parseNum(intRow[''])
+                const dscrPrior = intPrior ? noiPrior / intPrior : null
+                const dscrCurr = intCurr ? noiCurr / intCurr : null
+
+                Plotly.newPlot('dscrChart', [{
+                    x: periods,
+                    y: [dscrPrior, dscrCurr],
+                    type: 'bar',
+                    name: 'DSCR'
+                }], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Debt Service Coverage Ratio (DSCR)',
+                    yaxis: { title: 'DSCR' }
+                }, { responsive: true })
+            }
+
+            function plotDebtEquityChart(data) {
+                const hdr = data.find(r => r['__2'] === '$ Change (PY)')
+                const periodPrior = hdr['__1'], periodCurr = hdr['']
+                const periods = [periodPrior, periodCurr]
+                const liaRow = data.find(r => r['Balance Sheet Comparison'] === 'Total for Liabilities')
+                const eqRow = data.find(r => r['Balance Sheet Comparison'] === 'Total for Equity')
+                const liaPrior = parseNum(liaRow['__1']), liaCurr = parseNum(liaRow[''])
+                const eqPrior = parseNum(eqRow['__1']), eqCurr = parseNum(eqRow[''])
+                const dePrior = liaPrior / eqPrior, deCurr = liaCurr / eqCurr
+
+                Plotly.newPlot('debtEqChart', [{
+                    x: periods,
+                    y: [dePrior, deCurr],
+                    type: 'bar',
+                    name: 'Debt-to-Equity'
+                }], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Debt-to-Equity Ratio',
+                    yaxis: { title: 'Ratio' }
+                }, { responsive: true })
+            }
+
+            function plotARTurnoverChart(pl, bs) {
+                const hdr = pl.find(r => r['__2'] === '$ Change (PY)')
+                const periodPrior = hdr['__1'], periodCurr = hdr['']
+                const periods = [periodPrior, periodCurr]
+                const revRow = pl.find(r => r['Profit and Loss Comparison'] === 'Total for Income')
+                const arRow = bs.find(r => r['Balance Sheet Comparison'] === 'Accounts Receivable (A/R)')
+                const revPrior = parseNum(revRow['__1']), revCurr = parseNum(revRow[''])
+                const arPrior = parseNum(arRow['__1']), arCurr = parseNum(arRow[''])
+                const turnPrior = revPrior / arPrior, turnCurr = revCurr / arCurr
+
+                Plotly.newPlot('arTurnoverChart', [{
+                    x: periods,
+                    y: [turnPrior, turnCurr],
+                    type: 'bar',
+                    name: 'A/R Turnover'
+                }], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'A/R Turnover',
+                    yaxis: { title: 'Turns' }
+                }, { responsive: true })
+            }
+
+            function plotInventoryTurnoverChart(pl, bs) {
+                const hdr = pl.find(r => r['__2'] === '$ Change (PY)')
+                const periodPrior = hdr['__1'], periodCurr = hdr['']
+                const periods = [periodPrior, periodCurr]
+                const cogsRow = pl.find(r => r['Profit and Loss Comparison'] === 'Total for Cost of Goods Sold')
+                const cogsPrior = parseNum(cogsRow['__1']), cogsCurr = parseNum(cogsRow[''])
+                const invRows = bs.filter(r => /Inventory/.test(r['Balance Sheet Comparison']))
+                const invPrior = invRows.reduce((s, r) => s + parseNum(r['__1']), 0)
+                const invCurr = invRows.reduce((s, r) => s + parseNum(r['']), 0)
+                const invTurnPrior = cogsPrior / invPrior, invTurnCurr = cogsCurr / invCurr
+
+                Plotly.newPlot('invTurnoverChart', [{
+                    x: periods,
+                    y: [invTurnPrior, invTurnCurr],
+                    type: 'bar',
+                    name: 'Inventory Turnover'
+                }], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Inventory Turnover',
+                    yaxis: { title: 'Turns' }
+                }, { responsive: true })
+            }
+
+            function plotExpenseBreakdownChart(data) {
+                const start = data.findIndex(r => r['Profit and Loss Comparison'] === 'Expenses')
+                const end = data.findIndex(r => r['Profit and Loss Comparison'] === 'Total for Expenses')
+                const slice = data.slice(start + 1, end)
+                const labels = [], values = []
+                slice.forEach(r => {
+                    const label = r['Profit and Loss Comparison']
+                    const val = parseNum(r[''])
+                    if (label && val > 0) {
+                        labels.push(label)
+                        values.push(val)
+                    }
+                })
+                Plotly.newPlot('expenseBreakdownChart', [{
+                    labels,
+                    values,
+                    type: 'pie',
+                    hole: 0.4
+                }], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Expense Breakdown (Current Period)'
+                }, { responsive: true })
+            }
+
+            function plotBSCompositionChart(data) {
+                const assetsRow = data.find(r => r['Balance Sheet Comparison'] === 'Total for Assets')
+                const liaRow = data.find(r => r['Balance Sheet Comparison'] === 'Total for Liabilities')
+                const eqRow = data.find(r => r['Balance Sheet Comparison'] === 'Total for Equity')
+                const assets = parseNum(assetsRow[''])
+                const lia = parseNum(liaRow[''])
+                const eq = parseNum(eqRow[''])
+
+                Plotly.newPlot('bsCompositionChart', [{
+                    type: 'treemap',
+                    labels: ['Assets', 'Liabilities', 'Equity'],
+                    parents: ['', '', ''],
+                    values: [assets, lia, eq]
+                }], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Balance Sheet Composition'
+                }, { responsive: true })
+            }
+
+            function plotGrowthRatesChart(pl, bs) {
+                const revRow = pl.find(r => r['Profit and Loss Comparison'] === 'Total for Income')
+                const grossRow = pl.find(r => r['Profit and Loss Comparison'] === 'Gross Profit')
+                const netRow = pl.find(r => r['Profit and Loss Comparison'] === 'Net Income')
+                const assetsRow = bs.find(r => r['Balance Sheet Comparison'] === 'Total for Assets')
+                const liaRow = bs.find(r => r['Balance Sheet Comparison'] === 'Total for Liabilities')
+
+                const revPrior = parseNum(revRow['__1']), revCurr = parseNum(revRow[''])
+                const grossPrior = parseNum(grossRow['__1']), grossCurr = parseNum(grossRow[''])
+                const netPrior = parseNum(netRow['__1']), netCurr = parseNum(netRow[''])
+                const assetsPrior = parseNum(assetsRow['__1']), assetsCurr = parseNum(assetsRow[''])
+                const liaPriorV = parseNum(liaRow['__1']), liaCurrV = parseNum(liaRow[''])
+
+                const labels = ['Revenue', 'Gross Profit', 'Net Income', 'Total Assets', 'Total Liabilities']
+                const growth = [
+                    (revCurr - revPrior) / revPrior * 100,
+                    (grossCurr - grossPrior) / grossPrior * 100,
+                    (netCurr - netPrior) / netPrior * 100,
+                    (assetsCurr - assetsPrior) / assetsPrior * 100,
+                    (liaCurrV - liaPriorV) / liaPriorV * 100
+                ]
+
+                Plotly.newPlot('growthRatesChart', [{
+                    x: labels,
+                    y: growth,
+                    type: 'bar'
+                }], {
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    title: 'Year-over-Year Growth Rates (%)',
+                    yaxis: { ticksuffix: '%' }
+                }, { responsive: true })
+            }
+
+        </script>
+
+    </body>
+
+</html>
