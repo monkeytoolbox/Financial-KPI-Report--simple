@@ -514,22 +514,32 @@
                              <th style="border-bottom:1px solid #ccc;">${priorLabel}</th>
                              <th style="border-bottom:1px solid #ccc;">${currLabel}</th>
                              <th style="border-bottom:1px solid #ccc;">Change (%)</th></tr></thead><tbody>`
+                    const ratioMetrics = new Set(['Current Ratio', 'Quick Ratio', 'DSCR', 'Debt-to-Equity', 'A/R Turnover', 'Inventory Turnover'])
                     metrics.forEach(m => {
                         const change = m.prior ? ((m.curr - m.prior) / Math.abs(m.prior) * 100) : NaN
+                        const isRatio = ratioMetrics.has(m.name)
+                        const displayPrior = isRatio
+                            ? m.prior.toFixed(2)
+                            : m.prior.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                        const displayCurr = isRatio
+                            ? m.curr.toFixed(2)
+                            : m.curr.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
                         html += `<tr>
                             <td style="padding:4px 8px;">
-                              ${m.name}<br>
-                              <small style="color:#666;">${definitions[m.name]}</small>
+                                ${m.name}<br>
+                                <small style="color:#666;">${definitions[m.name]}</small>
                             </td>
                             <td style="padding:4px 8px;">
-                              ${m.prior.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}<br>
-                              <small style="color:#666;">${m.calcPriorStr}</small>
+                                ${displayPrior}<br>
+                                <small style="color:#666;">${m.calcPriorStr}</small>
                             </td>
                             <td style="padding:4px 8px;">
-                              ${m.curr.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}<br>
-                              <small style="color:#666;">${m.calcCurrStr}</small>
+                                ${displayCurr}<br>
+                                <small style="color:#666;">${m.calcCurrStr}</small>
                             </td>
-                            <td style="padding:4px 8px;">${isNaN(change) ? '–' : change.toFixed(2) + '%'}</td>
+                            <td style="padding:4px 8px;">
+                                ${isNaN(change) ? '–' : change.toFixed(2) + '%'}
+                            </td>
                         </tr>`
                     })
                     html += '</tbody></table>'
